@@ -12,7 +12,23 @@ import type {
   AnalyticsData
 } from '../types';
 
-const API_BASE = '/api';
+// Dynamic API Base URL resolver supporting Vite env variables, production Render backend, and local dev proxy
+const RAW_API_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL;
+
+export const getApiBaseUrl = (): string => {
+  if (RAW_API_URL) {
+    const cleanUrl = RAW_API_URL.replace(/\/+$/, '');
+    return cleanUrl.endsWith('/api') ? cleanUrl : `${cleanUrl}/api`;
+  }
+  // Production fallback for deployed frontend (e.g. on Vercel)
+  if (import.meta.env.PROD) {
+    return 'https://fueltrust-backend.onrender.com/api';
+  }
+  // Development mode default (uses Vite proxy to local FastAPI on 127.0.0.1:8000)
+  return '/api';
+};
+
+const API_BASE = getApiBaseUrl();
 
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {

@@ -1,3 +1,4 @@
+import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -23,15 +24,30 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="FuelTrust API",
-    description="Independent Fuel-Refuelling Verification System Prototype API",
+    description="Smart Fuel Verification & Vehicle Efficiency Monitoring API",
     version="1.1.0",
     lifespan=lifespan
 )
 
-# Enable CORS for local Vite frontend
+# Configure CORS origins for local dev and Vercel production frontend
+cors_env = os.getenv("CORS_ORIGINS", "")
+parsed_env_origins = [origin.strip() for origin in cors_env.split(",") if origin.strip()]
+
+default_origins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "https://fueltrust.vercel.app",
+    "https://fuel-trust.vercel.app",
+]
+
+allowed_origins = list(set(default_origins + parsed_env_origins))
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins,
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -51,9 +67,9 @@ app.include_router(calibration_router)
 def root():
     return {
         "system": "FuelTrust",
-        "tagline": "Independent Fuel Verification",
+        "tagline": "Smart Fuel Verification & Vehicle Efficiency Monitoring",
         "status": "online",
-        "version": "1.1.0-prototype",
+        "version": "1.1.0",
         "docs": "/docs"
     }
 
@@ -62,5 +78,5 @@ def health_check():
     return {
         "status": "healthy",
         "service": "FuelTrust Backend",
-        "mode": "PROTOTYPE_SIMULATED_SENSOR"
+        "mode": "SIMULATED_SENSOR_INTERFACE"
     }
