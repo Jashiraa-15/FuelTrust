@@ -26,15 +26,8 @@ import { api } from './services/api';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 
 export const App: React.FC = () => {
-  // Authentication State
-  const [user, setUser] = useState<AuthUser | null>(() => {
-    try {
-      const saved = localStorage.getItem('fueltrust_auth_user');
-      return saved ? JSON.parse(saved) : null;
-    } catch {
-      return null;
-    }
-  });
+  // Authentication State - In-memory only: always requires Login on startup or reload
+  const [user, setUser] = useState<AuthUser | null>(null);
 
   const [activeTab, setActiveTab] = useState<NavTab>('dashboard');
 
@@ -58,14 +51,19 @@ export const App: React.FC = () => {
   // Inspection Modal State
   const [inspectedRefuelling, setInspectedRefuelling] = useState<Refuelling | null>(null);
 
-  // Login handler
+  // Ensure legacy persistent session tokens are removed on application mount
+  useEffect(() => {
+    try {
+      localStorage.removeItem('fueltrust_auth_user');
+      sessionStorage.clear();
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  // Login handler - In-memory session for current page lifecycle only
   const handleLoginSuccess = (authUser: AuthUser) => {
     setUser(authUser);
-    try {
-      localStorage.setItem('fueltrust_auth_user', JSON.stringify(authUser));
-    } catch (e) {
-      console.error('Storage error:', e);
-    }
   };
 
   // Logout handler
@@ -73,8 +71,9 @@ export const App: React.FC = () => {
     setUser(null);
     try {
       localStorage.removeItem('fueltrust_auth_user');
-    } catch (e) {
-      console.error('Storage error:', e);
+      sessionStorage.clear();
+    } catch {
+      // ignore
     }
   };
 
